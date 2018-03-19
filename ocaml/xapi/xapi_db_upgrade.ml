@@ -511,6 +511,18 @@ let upgrade_recommendations_for_gpu_passthru = {
       ) (Db.VM.get_all ~__context)
 }
 
+let upgrade_recommendations_for_network_sriov = {
+  description = "Upgrading recommendations to allow network SR-IOV via the current templates";
+  version = (fun x -> x < falcon);
+  fn = fun ~__context ->
+    let templates,vms = List.partition (fun vm -> Db.VM.get_is_a_template ~__context ~self:vm)(Db.VM.get_all ~__context) in
+    List.iter (fun vm ->
+        let reference_lable = Db.VM.get_reference_label ~__context ~self:vm in
+        let template = List.find (fun template -> reference_lable = Db.VM.get_reference_label ~__context ~self:template) templates in
+        Db.VM.set_recommendations ~__context ~self:vm ~value:(Db.VM.get_recommendations ~__context ~self:template)
+      ) vms
+}
+
 let upgrade_vswitch_controller = {
   description = "Upgrading vswitch controller settings";
   version = (fun x -> x < falcon);
@@ -572,6 +584,7 @@ let rules = [
   update_tools_sr_pbd_device_config;
   upgrade_recommendations_for_gpu_passthru;
   upgrade_vswitch_controller;
+  upgrade_recommendations_for_network_sriov;
 ]
 
 (* Maybe upgrade most recent db *)
