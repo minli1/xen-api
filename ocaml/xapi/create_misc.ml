@@ -134,6 +134,10 @@ let read_localhost_info () =
   let me = Helpers.get_localhost_uuid () in
   let lookup_inventory_nofail k = try Some (Xapi_inventory.lookup k) with _ -> None in
   let this_host_name = Helpers.get_hostname() in
+  let cc_mode = try (
+    bool_of_string (
+      Xapi_inventory.lookup "CC_PREPARATIONS" ~default:"false")
+  ) with _ -> false in
 
   let dom0_static_max = match read_dom0_memory_usage () with
     | Some x -> x
@@ -154,10 +158,10 @@ let read_localhost_info () =
     machine_serial_name = lookup_inventory_nofail Xapi_inventory._machine_serial_name;
     total_memory_mib = total_memory_mib;
     dom0_static_max = dom0_static_max;
-    ssl_legacy = try (
-      bool_of_string (
-        Xapi_inventory.lookup Xapi_inventory._stunnel_legacy ~default:"true")
-    ) with _ -> true;
+    ssl_legacy = if cc_mode then false else
+      try
+        bool_of_string (Xapi_inventory.lookup Xapi_inventory._stunnel_legacy ~default:"true")
+      with _ -> true;
   }
 
 (** Returns the maximum of two values. *)

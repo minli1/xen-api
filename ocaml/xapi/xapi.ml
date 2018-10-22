@@ -632,7 +632,12 @@ let set_stunnel_legacy_inv ~__context () =
     );
   Stunnel.set_legacy_ciphersuites !Xapi_globs.ciphersuites_legacy_outbound;
   let s = Xapi_inventory.lookup Xapi_inventory._stunnel_legacy ~default:"true" in
-  let legacy = try
+  let cc_mode = try (
+    bool_of_string (
+      Xapi_inventory.lookup "CC_PREPARATIONS" ~default:"false")
+  ) with _ -> false in
+  let legacy = if cc_mode then false else
+    try
       bool_of_string s
     with e ->
       error "Invalid inventory value for %s: expected a Boolean; found %s" Xapi_inventory._stunnel_legacy s;
